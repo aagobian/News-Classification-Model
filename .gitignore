@@ -1,0 +1,9 @@
+# editor settings
+.vscode
+.idea
+
+# mac os
+.DS_Store
+
+# pycache
+src/__pycache__
