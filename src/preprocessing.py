@@ -1,6 +1,11 @@
 import nltk
-from nltk.tokenize import word_tokenize
+from nltk import pos_tag
+from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer, WordNetLemmatizer
+from nltk.chunk import ne_chunk
 import pandas as pd
+import re
 
 def preprocessing():
     # specify file path and read data
@@ -14,11 +19,19 @@ def preprocessing():
     df["title"] = df["title"].str.lower()
     df["text"] = df["text"].str.lower()
 
-    # tokenize relevant columns
-    df["title"] = df["title"].apply(word_tokenize)
-    df["text"] = df["text"].apply(word_tokenize)
+    # perform segmentation on relevant columns
+    df["title"] = df["title"].apply(sent_tokenize)
+    df["text"] = df["text"].apply(sent_tokenize)
 
-    # TODO: complete prepreprocessing steps here
+    # remove punctuation from relevant columns
+    df["title"] = df["title"].apply(lambda x: [re.sub(r"[^a-zA-Z0-9]", " ", sentence) for sentence in x])
+    df["text"] = df["text"].apply(lambda x: [re.sub(r"[^a-zA-Z0-9]", " ", sentence) for sentence in x])
+
+    # perform word tokenization on relevant columns
+    df["title"] = df["title"].apply(lambda x: [word_tokenize(sentence) for sentence in x])
+    df["text"] = df["text"].apply(lambda x: [word_tokenize(sentence) for sentence in x])
+
+    # TODO: complete prepreprocessing steps here (stop word removal, stemming, lemmatization, POS tagging, etc.)
 
 if __name__ == "__main__":
     preprocessing()
