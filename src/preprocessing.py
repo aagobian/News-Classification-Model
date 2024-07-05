@@ -1,5 +1,5 @@
 import nltk
-from nltk.tokenize import sent_tokenize
+from nltk.tokenize import word_tokenize
 import pandas as pd
 
 def preprocessing():
@@ -15,9 +15,10 @@ def preprocessing():
     df["text"] = df["text"].str.lower()
 
     # tokenize relevant columns
-    nltk.download('punkt')
-    df["title"] = sent_tokenize(df["title"], language="english")
-    df["text"] = sent_tokenize(df["text"], language="english")
+    df["title"] = df["title"].apply(word_tokenize)
+    df["text"] = df["text"].apply(word_tokenize)
 
-    # TODO: fix tokenization to work with pandas series
     # TODO: complete prepreprocessing steps here
+
+if __name__ == "__main__":
+    preprocessing()
