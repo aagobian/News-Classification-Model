@@ -20,6 +20,7 @@ def preprocessing():
     df["text"] = df["text"].str.lower()
 
     # perform segmentation on relevant columns
+    nltk.download("punkt")
     df["title"] = df["title"].apply(sent_tokenize)
     df["text"] = df["text"].apply(sent_tokenize)
 
@@ -31,6 +32,15 @@ def preprocessing():
     df["title"] = df["title"].apply(lambda x: [word_tokenize(sentence) for sentence in x])
     df["text"] = df["text"].apply(lambda x: [word_tokenize(sentence) for sentence in x])
 
+    print(df.head())
+
+    # remove stop words from relevant columns
+    nltk.download("stopwords")
+    stop_words = set(stopwords.words("english"))
+    df["title"] = df["title"].apply(lambda x: [[word for word in sentence if word not in stop_words] for sentence in x])
+    df["text"] = df["text"].apply(lambda x: [[word for word in sentence if word not in stop_words] for sentence in x])
+
+    print(df.head())
     # TODO: complete prepreprocessing steps here (stop word removal, stemming, lemmatization, POS tagging, etc.)
 
 if __name__ == "__main__":
