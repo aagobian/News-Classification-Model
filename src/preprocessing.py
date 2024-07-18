@@ -1,47 +1,62 @@
-import nltk
-from nltk import pos_tag
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer, WordNetLemmatizer
-from nltk.chunk import ne_chunk
+from nltk.stem import WordNetLemmatizer
 import pandas as pd
 import re
+from tqdm import tqdm
 
 def preprocessing():
-    # specify file path and read data
-    file_path = "data/raw/WELFake.csv"
-    df = pd.read_csv(file_path)
+    # Read data
+    df = pd.read_csv("data/raw/WELFake.csv")
 
-    # drop na values
+    # Drop NA values
     df = df.dropna()
 
-    # convert relevant columns to lowercase
-    df["title"] = df["title"].str.lower()
-    df["text"] = df["text"].str.lower()
+    # Initialize tqdm for monitoring progress
+    tqdm.pandas()
 
-    # perform segmentation on relevant columns
-    nltk.download("punkt")
-    df["title"] = df["title"].apply(sent_tokenize)
-    df["text"] = df["text"].apply(sent_tokenize)
+    # Process title and text columns
+    for col in ["title", "text"]:
+        # Apply tqdm on pandas series
+        tqdm.pandas(desc=f"Processing {col} column...")
+        
+        print(df.head())
+        print("Tokenizing sentences...")
 
-    # remove punctuation from relevant columns
-    df["title"] = df["title"].apply(lambda x: [re.sub(r"[^a-zA-Z0-9]", " ", sentence) for sentence in x])
-    df["text"] = df["text"].apply(lambda x: [re.sub(r"[^a-zA-Z0-9]", " ", sentence) for sentence in x])
+        # Perform segmentation
+        df[col] = df[col].progress_apply(sent_tokenize)
 
-    # perform word tokenization on relevant columns
-    df["title"] = df["title"].apply(lambda x: [word_tokenize(sentence) for sentence in x])
-    df["text"] = df["text"].apply(lambda x: [word_tokenize(sentence) for sentence in x])
+        print(df.head())
+        print("Removing punctuation...")
 
-    print(df.head())
+        # Remove punctuation
+        df[col] = df[col].progress_apply(lambda x: [re.sub(r"[^a-zA-Z0-9]", " ", sentence) for sentence in x])
+        
+        print(df.head())
+        print("Tokenizing words...")
 
-    # remove stop words from relevant columns
-    nltk.download("stopwords")
-    stop_words = set(stopwords.words("english"))
-    df["title"] = df["title"].apply(lambda x: [[word for word in sentence if word not in stop_words] for sentence in x])
-    df["text"] = df["text"].apply(lambda x: [[word for word in sentence if word not in stop_words] for sentence in x])
+        # Tokenize words
+        df[col] = df[col].progress_apply(lambda x: [word_tokenize(sentence) for sentence in x])
+        
+        print(df.head())
+        print("Removing stop words...")
+        
+        # Remove stop words
+        stop_words = set(stopwords.words("english"))
+        df[col] = df[col].progress_apply(lambda x: [[word for word in sentence if word.lower() not in stop_words] for sentence in x])
+        
+        print(df.head())
+        print("Lemmatizing words...")
 
-    print(df.head())
-    # TODO: complete prepreprocessing steps here (stop word removal, stemming, lemmatization, POS tagging, etc.)
+        # Lemmatize words
+        lemmatizer = WordNetLemmatizer()
+        df[col] = df[col].progress_apply(lambda x: [[lemmatizer.lemmatize(word) for word in sentence] for sentence in x])
+        
+        print(df.head())
+        
+    # Save preprocessed data
+    print("Saving processed data...")
+    df.to_csv("data/processed/WELFakeProcessed.csv", mode="w", index=False)
 
 if __name__ == "__main__":
     preprocessing()
