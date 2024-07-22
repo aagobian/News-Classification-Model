@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
 
 device = (
         "cuda" 
@@ -18,9 +19,18 @@ device = (
 
 print(f"Using {device} device")
 
+# read dataset
+df = pd.read_csv("data/processed/WELFakeProcessed.csv")
+
+# convert text to vectors
+vectorizer = TfidfVectorizer(max_features=300)  
+
+x = vectorizer.fit_transform(df["text"]).toarray()
+y = df["label"].values
+
 # define neural network
 class NeuralNetwork(nn.Module):
-    def __init__(self, in_features=300, h1=128, h2=128, out_features=1):
+    def __init__(self, in_features=300, h1=128, h2=64, out_features=1):
         super().__init__()
         self.fc1 = nn.Linear(in_features, h1) # input layer
         self.fc2 = nn.Linear(h1, h2) # hidden layer
@@ -36,17 +46,7 @@ class NeuralNetwork(nn.Module):
 model = NeuralNetwork().to(device)
 print(model)
 
-# read dataset
-df = pd.read_csv("data/processed/WELFakeProcessed.csv")
-
-# split data into X and Y
-x = df["text"]
-y = df["label"].values
-
-# convert text to vectors
-vectorizer = TfidfVectorizer(max_features=300)
-x = vectorizer.fit_transform(x).toarray()
-
+# split data into train and test sets
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.4)
 
 x_train = torch.tensor(x_train, dtype=torch.float32).to(device)
@@ -55,50 +55,50 @@ y_train = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1).to(device)
 y_test = torch.tensor(y_test, dtype=torch.float32).unsqueeze(1).to(device)
 
 criterion = nn.BCEWithLogitsLoss() # binary cross entropy loss
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01) 
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001) 
 
 # train model
-epochs = 500
+epochs = 1000
 losses = []
 for i in range(epochs):
     y_pred = model.forward(x_train)
 
     loss = criterion(y_pred, y_train)
-
     losses.append(loss.detach().cpu().numpy())
 
-    print(f"Epoch {i + 1} with loss {loss}")
+    if (i + 1) % 100 == 0:  # Print every 100 epochs
+        print(f"Epoch {i + 1} with loss {loss}")
 
+    # Back propagation
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
 
-# plot loss
+# Plot loss
 plt.plot(range(epochs), losses)
 plt.ylabel("Error/Loss")
 plt.xlabel("Epoch")
 plt.show()
 
-# evaluate model
+# Evaluate model
 with torch.no_grad():
-    y_eval = model.forward(x_test)
-    loss = criterion(y_eval, y_test)
-    print(loss)
+    y_eval = model(x_test) # get predictions
+    loss = criterion(y_eval, y_test) # calculate loss
+    print(f"Evaluation loss: {loss.item()}") 
 
-# test model
+# Test model
 correct = 0
+total = len(y_test)
 with torch.no_grad():
     for i, data in enumerate(x_test):
-        y_val = model.forward(data)
+        y_val = model(data.unsqueeze(0)) # unsqueeze to add batch size of 1  
+        y_val = torch.sigmoid(y_val)  # convert to probability
+        predicted = (y_val > 0.5).float()  # convert to binary
 
-        print(f"Count {i + 1}, {str(y_val)} \t {y_test[i]}")
-
-        if y_val.argmax().item == y_val:
+        if predicted.eq(y_test[i]).all().item():  # check if prediction is correct
             correct += 1
 
-        if i == 1000:
-            break
-    
-print("We got " + str(correct) + " right!")
+print(f"Accuracy: {round(100 * correct / total, 2)}%")
+print(f"That's {correct} out of {total} right!")
 
-# TODO: model is not doing well on validation data, need to find discrepancies in the code/data
+# TODO: Model is overfitting, try to improve it (maybe dropout or L2 regularization)
