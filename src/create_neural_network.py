@@ -111,7 +111,7 @@ print(f"That's {correct} out of {total} right!")
 while True:
     save = input("Do you want to save the model? It will overwrite the saved model if it exists. (y/n): ")
     if save.lower() == "y":
-        torch.save(model.state_dict(), "models/neural_network.pth")
+        torch.save(model.state_dict(), "models/neural_network_weights.pth")
         break
     elif save.lower() == "n":
         break
