@@ -29,7 +29,7 @@ y = df["label"].values
 
 # Define neural network
 class NeuralNetwork(nn.Module):
-    def __init__(self, in_features=1000, h1=750, h2=500, h3=250, h4=125, out_features=1):
+    def __init__(self, in_features=1000, h1=800, h2=600, h3=400, h4=200, out_features=1):
         super().__init__()
         self.fc1 = nn.Linear(in_features, h1) # Input layer
         self.fc2 = nn.Linear(h1, h2) # Hidden layer
@@ -106,3 +106,15 @@ with torch.no_grad():
 # Print accuracy
 print(f"Accuracy: {round(100 * correct / total, 2)}%")
 print(f"That's {correct} out of {total} right!")
+
+# Save model
+while True:
+    save = input("Do you want to save the model? It will overwrite the saved model if it exists. (y/n): ")
+    if save.lower() == "y":
+        torch.save(model.state_dict(), "models/neural_network.pth")
+        break
+    elif save.lower() == "n":
+        break
+    else:
+        print("Invalid input. Please enter 'y' or 'n'.")
+
